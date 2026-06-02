@@ -1,51 +1,24 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import AdminLayout from '@/components/AdminLayout'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import AdminLayout from '@/components/AdminLayout'
+import { createClient } from '@/lib/supabase/server'
 
-export default function AdminDashboardPage() {
-  const [stats, setStats] = useState({
-    orders: 0,
-    revenue: 0,
-    enquiries: 0,
-    products: 0
-  })
-  const [recentOrders, setRecentOrders] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const supabase = createClient()
-  const router = useRouter()
+export default async function AdminDashboardPage() {
+  const supabase = await createClient()
 
-  useEffect(() => {
-    async function fetchStats() {
-      const [
-        { count: ordersCount, data: ordersData },
-        { count: enquiriesCount },
-        { count: productsCount }
-      ] = await Promise.all([
-        supabase.from('orders').select('*', { count: 'exact' }).order('created_at', { ascending: false }).limit(5),
-        supabase.from('enquiries').select('*', { count: 'exact' }),
-        supabase.from('products').select('*', { count: 'exact' })
-      ])
+  const [ordersResult, enquiriesResult, productsResult] = await Promise.all([
+    supabase.from('orders').select('*', { count: 'exact' }).order('created_at', { ascending: false }).limit(5),
+    supabase.from('enquiries').select('*', { count: 'exact' }),
+    supabase.from('products').select('*', { count: 'exact' }),
+  ])
 
-      const revenue = (ordersData || [])
-        .filter(o => o.status !== 'pending' && o.status !== 'cancelled')
-        .reduce((sum, o) => sum + o.total_amount, 0)
+  const ordersCount = ordersResult.count || 0
+  const enquiriesCount = enquiriesResult.count || 0
+  const productsCount = productsResult.count || 0
+  const ordersData = ordersResult.data || []
 
-      setStats({
-        orders: ordersCount || 0,
-        revenue,
-        enquiries: enquiriesCount || 0,
-        products: productsCount || 0
-      })
-      setRecentOrders(ordersData || [])
-      setLoading(false)
-    }
-
-    fetchStats()
-  }, [supabase])
+  const revenue = ordersData
+    .filter((o: any) => o.status !== 'pending' && o.status !== 'cancelled')
+    .reduce((sum: number, o: any) => sum + (o.total_amount || 0), 0)
 
   return (
     <AdminLayout activeTab="dashboard">
@@ -59,13 +32,12 @@ export default function AdminDashboardPage() {
         </Link>
       </header>
 
-      {/* Stats Grid - High Contrast */}
       <section className="grid grid-cols-1 md:grid-cols-4 gap-12">
         {[
-          { label: 'Total Volume', value: stats.orders, suffix: ' Sales', color: 'text-brand-dark' },
-          { label: 'Net Revenue', value: `₹${stats.revenue.toLocaleString('en-IN')}`, suffix: '', color: 'text-brand-red' },
-          { label: 'Open Inquiries', value: stats.enquiries, suffix: ' Threads', color: 'text-brand-dark' },
-          { label: 'Active Items', value: stats.products, suffix: ' SKUs', color: 'text-brand-dark' }
+          { label: 'Total Volume', value: ordersCount, suffix: ' Sales', color: 'text-brand-dark' },
+          { label: 'Net Revenue', value: `₹${revenue.toLocaleString('en-IN')}`, suffix: '', color: 'text-brand-red' },
+          { label: 'Open Inquiries', value: enquiriesCount, suffix: ' Threads', color: 'text-brand-dark' },
+          { label: 'Active Items', value: productsCount, suffix: ' SKUs', color: 'text-brand-dark' },
         ].map((stat, i) => (
           <div key={i} className="space-y-4 group cursor-default">
             <p className="text-[10px] uppercase tracking-[0.5em] text-gray-400 group-hover:text-brand-red transition-colors">{stat.label}</p>
@@ -77,7 +49,6 @@ export default function AdminDashboardPage() {
         ))}
       </section>
 
-      {/* Recent Orders - Clean & Professional */}
       <section className="bg-white rounded-sm border border-gray-100 overflow-hidden shadow-sm">
         <div className="px-10 py-8 border-b border-gray-50 flex justify-between items-center">
           <h3 className="text-[11px] uppercase tracking-[0.5em] font-black text-brand-dark">Audit Logs & Activity</h3>
@@ -85,17 +56,15 @@ export default function AdminDashboardPage() {
             <button className="text-[9px] uppercase tracking-widest text-gray-400 hover:text-brand-red transition-colors">Export .CSV</button>
           </div>
         </div>
-        
+
         <div className="divide-y divide-gray-50">
-          {loading ? (
-            <div className="p-16 text-center text-[10px] uppercase tracking-[1em] text-gray-300 animate-pulse">Syncing...</div>
-          ) : recentOrders.length === 0 ? (
+          {ordersData.length === 0 ? (
             <div className="p-24 text-center space-y-4">
               <p className="text-gray-200 text-6xl font-serif italic opacity-50">Nothing yet.</p>
               <p className="text-[10px] uppercase tracking-[0.3em] text-gray-400">Waiting for first connection</p>
             </div>
           ) : (
-            recentOrders.map((order) => (
+            ordersData.map((order: any) => (
               <div key={order.id} className="px-10 py-8 flex justify-between items-center hover:bg-gray-50 transition-all group">
                 <div className="space-y-2">
                   <p className="text-lg font-serif italic text-brand-dark group-hover:text-brand-red transition-colors">{order.buyer_name}</p>
@@ -109,7 +78,7 @@ export default function AdminDashboardPage() {
                   }`}>
                     {order.status}
                   </span>
-                  <p className="text-2xl font-light text-brand-dark tracking-tighter w-32 text-right">₹{order.total_amount.toLocaleString('en-IN')}</p>
+                  <p className="text-2xl font-light text-brand-dark tracking-tighter w-32 text-right">₹{(order.total_amount || 0).toLocaleString('en-IN')}</p>
                 </div>
               </div>
             ))

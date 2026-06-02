@@ -34,7 +34,7 @@ Customers add items to a slide-out cart. When ready, they proceed to checkout.
 
 ## 👩‍💻 2. The Command Center (What YOU Control)
 
-You have a secret backend at `yourdomain.com/admin`. This is your central command station. 
+A protected admin dashboard is available to authorized users for managing inventory, orders, and site content.
 
 ### A. Managing Your Inventory
 In the **Products** tab, you can add new drops, upload images, set prices, and control stock. When an item runs out, uncheck "Available" and your storefront will automatically update.

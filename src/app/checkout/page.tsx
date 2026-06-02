@@ -60,16 +60,33 @@ export default function CheckoutPage() {
         name: 'Ilaara',
         description: 'Order Payment',
         order_id: data.orderId,
-        handler: function (response: any) {
+        handler: async function (response: any) {
+          const verification = await fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              internalOrderId: data.internalOrderId,
+            }),
+          })
+
+          const verificationResult = await verification.json()
+          if (!verification.ok) {
+            alert(verificationResult.error || 'Payment verification failed')
+            return
+          }
+
           clearCart()
           router.push(`/success?order=${data.internalOrderId}`)
         },
         prefill: {
           name: formData.name,
           email: formData.email,
-          contact: formData.phone
+          contact: formData.phone,
         },
-        theme: { color: '#8B0000' }
+        theme: { color: '#8B0000' },
       }
 
       const rzp = new (window as any).Razorpay(options)

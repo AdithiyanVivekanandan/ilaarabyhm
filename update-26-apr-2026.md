@@ -2,9 +2,9 @@
 ## Project: ILAARA High-Fidelity Command Center Deployment
 
 ### 1. Authentication & Security Hardening
-*   **Auth Handshake Fix**: Refactored `src/app/api/auth/confirm/route.ts` to implement manual cookie propagation. This resolves the Vercel-specific issue where PKCE sessions were dropped during the magic link redirect, ensuring the developer is recognized as an authenticated user, not "Anonymous."
-*   **Developer Password Override**: Modified `src/app/admin/login/page.tsx` to include a conditional password fallback. This UI element is hidden for standard admins but unlocks instantly when the Developer email is entered, allowing bypass of SMTP/Magic Link latency for rapid maintenance.
-*   **Middleware Authorization**: Enhanced `src/proxy.ts` to strictly enforce developer-only access to `/dev` using both server-side and client-side environment variables.
+*   **Auth Handshake Fix**: Improved `src/app/api/auth/confirm/route.ts` to preserve session cookies during the Supabase login redirect, reducing Vercel-specific authentication failures.
+*   **Authentication Hardening**: Removed the developer password override from the public admin login UI to reduce exposure from leaked developer-route assumptions.
+*   **Middleware Authorization**: Consolidated admin/dev protection into root middleware and removed legacy proxy logic.
 
 ### 2. Developer "Command Control" Hub (`/dev`)
 The developer dashboard has been completely transformed into a multi-tabbed orchestration suite:

@@ -9,7 +9,8 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type') as EmailOtpType | null
   
   const rawNext = searchParams.get('next') || '/admin'
-  const next = rawNext.startsWith('/dev') ? '/dev' : '/admin'
+  const allowedPaths = ['/admin', '/dev']
+  const next = allowedPaths.includes(rawNext) ? rawNext : '/admin'
 
   const redirectTo = new URL(next, request.url)
   const response = NextResponse.redirect(redirectTo)

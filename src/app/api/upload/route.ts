@@ -1,20 +1,27 @@
-import { createClient } from '@/lib/supabase/server'
 import { v2 as cloudinary } from 'cloudinary'
 import { NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/requireAdmin'
+
+function isValidImage(buffer: Buffer): boolean {
+  const header = buffer.slice(0, 12)
+  if (header.length < 12) return false
+
+  const isJpeg = header[0] === 0xff && header[1] === 0xd8
+  const isPng = header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4e && header[3] === 0x47
+  const isWebp = header.toString('ascii', 0, 4) === 'RIFF' && header.toString('ascii', 8, 12) === 'WEBP'
+
+  return isJpeg || isPng || isWebp
+}
 
 export async function POST(request: Request) {
-  // Config should be inside at least for module safety in some environments
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
     api_key: process.env.CLOUDINARY_API_KEY!,
     api_secret: process.env.CLOUDINARY_API_SECRET!,
   })
 
-  // Auth check — only admin can upload
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user || user.email !== process.env.ADMIN_EMAIL) {
+  const adminUser = await requireAdmin()
+  if (!adminUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -25,13 +32,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 })
   }
 
-  // Validate file type
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
-  if (!allowedTypes.includes(file.type)) {
-    return NextResponse.json({ error: 'Invalid file type' }, { status: 400 })
-  }
-
-  // Validate file size — max 10MB
   if (file.size > 10 * 1024 * 1024) {
     return NextResponse.json({ error: 'File too large' }, { status: 400 })
   }
@@ -39,8 +39,11 @@ export async function POST(request: Request) {
   const bytes = await file.arrayBuffer()
   const buffer = Buffer.from(bytes)
 
+  if (!isValidImage(buffer)) {
+    return NextResponse.json({ error: 'Invalid file type' }, { status: 400 })
+  }
+
   try {
-    // Upload to Cloudinary with transformations that strip EXIF
     const result = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload_stream(
         {

@@ -54,13 +54,8 @@ export default function ContactPage() {
             </p>
             
             <div className="space-y-2">
-              <p className="text-[10px] uppercase tracking-widest text-gray-400">Reach us via email</p>
-              <a href="mailto:ilaarabyhm@gmail.com" className="text-base md:text-lg hover:text-brand-red transition-colors border-b border-brand-red/10 pb-1">ilaarabyhm@gmail.com</a>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-[10px] uppercase tracking-widest text-gray-400">Instant Message</p>
-              <a href="https://wa.me/917530038775" target="_blank" rel="noopener noreferrer" className="text-base md:text-lg hover:text-brand-red transition-colors border-b border-brand-red/10 pb-1">WhatsApp →</a>
+              <p className="text-[10px] uppercase tracking-widest text-gray-400">Contact method</p>
+              <p className="text-base md:text-lg text-gray-600 leading-relaxed">Please use the form to send your message — our team will reply by email or WhatsApp after submission.</p>
             </div>
           </div>
         </section>
